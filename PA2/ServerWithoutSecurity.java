@@ -6,7 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class ServerWithoutSecurity {
-
+	//infinity edge
 	public static void main(String[] args) {
 
     	int port = 4321;
