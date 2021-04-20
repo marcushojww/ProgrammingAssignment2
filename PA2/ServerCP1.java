@@ -10,7 +10,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.*;
 
-public class ServerWithoutSecurity {
+public class ServerCP1 {
 	
 	public static void main(String[] args) {
 
@@ -65,7 +65,7 @@ public class ServerWithoutSecurity {
 				}
 				//if asked for server cert
 				if (packetType == 888) {
-
+					System.out.println("Client is asking for certification");
 					String encryptedServerCert = Base64Class.encode(serverCert.getEncoded());
 
 					//send encrypted Server certificate to Client
@@ -78,13 +78,7 @@ public class ServerWithoutSecurity {
 					toClient.close();
 					connectionSocket.close();
 			} 
-				//if file transer is done
-				if (packetType == 8) {
-					System.out.println("File transfer completed. Closing connection...");
-					fromClient.close();
-						toClient.close();
-						connectionSocket.close();
-				}
+			
 				
 				// If the packet is for transferring the filename
 				if (packetType == 0) {
@@ -118,7 +112,6 @@ public class ServerWithoutSecurity {
 						bufferedFileOutputStream.write(decryptedFile, 0, numBytes);
 
 					if (numBytes < 117) {
-						System.out.println("Closing connection...");
 
 						if (bufferedFileOutputStream != null) bufferedFileOutputStream.close();
 						if (bufferedFileOutputStream != null) fileOutputStream.close();

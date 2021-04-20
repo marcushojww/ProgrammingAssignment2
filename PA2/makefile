@@ -5,8 +5,10 @@ JC = javac
 	$(JC) $(JFLAGS) $*.java
 
 CLASSES = \
-	ServerWithoutSecurity.java \
-	ClientWithoutSecurity.java 
+	ServerCP1.java \
+	ClientCP1.java \
+	ServerCP2.java \
+	ClientCP2.java
 
 
 default: classes
