@@ -8,6 +8,7 @@ CLASSES = \
 	ServerWithoutSecurity.java \
 	ClientWithoutSecurity.java 
 
+
 default: classes
 
 classes: $(CLASSES:.java=.class)
