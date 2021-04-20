@@ -63,7 +63,7 @@ public class ServerWithoutSecurity {
 					//send encrypted message to Client
 					toClient.writeUTF(encryptedMessage);
 				}
-
+				//if asked for server cert
 				if (packetType == 888) {
 
 					String encryptedServerCert = Base64Class.encode(serverCert.getEncoded());
@@ -71,39 +71,58 @@ public class ServerWithoutSecurity {
 					//send encrypted Server certificate to Client
 					toClient.writeUTF(encryptedServerCert);
 				}
-
+				//if error is present
+				if (packetType == 404) {
+					System.out.println("Error 404");
+					fromClient.close();
+					toClient.close();
+					connectionSocket.close();
+			} 
+				//if file transer is done
+				if (packetType == 8) {
+					System.out.println("File transfer completed. Closing connection...");
+					fromClient.close();
+						toClient.close();
+						connectionSocket.close();
+				}
+				
 				// If the packet is for transferring the filename
 				if (packetType == 0) {
 
 					System.out.println("Receiving file...");
 
 					int numBytes = fromClient.readInt();
-					byte [] filename = new byte[numBytes];
+					int numBytesFilename = fromClient.readInt();
+					
+					byte [] filename = new byte[numBytesFilename];
 					// Must use read fully!
 					// See: https://stackoverflow.com/questions/25897627/datainputstream-read-vs-datainputstream-readfully
-					fromClient.readFully(filename, 0, numBytes);
+					fromClient.readFully(filename, 0, numBytesFilename);
 
-					fileOutputStream = new FileOutputStream("recv_"+new String(filename, 0, numBytes));
+					byte[] decryptedFilename = RSA.decrypt(filename, serverPrivateKey);
+
+					fileOutputStream = new FileOutputStream("recv_"+new String(decryptedFilename, 0, numBytes));
 					bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
 
 				// If the packet is for transferring a chunk of the file
 				} else if (packetType == 1) {
 
 					int numBytes = fromClient.readInt();
-					byte [] block = new byte[numBytes];
-					fromClient.readFully(block, 0, numBytes);
+					int numBytesFile = fromClient.readInt();
+					byte [] block = new byte[numBytesFile];
+					fromClient.readFully(block, 0, numBytesFile);
 
-					if (numBytes > 0)
-						bufferedFileOutputStream.write(block, 0, numBytes);
+					byte[] decryptedFile = RSA.decrypt(block, serverPrivateKey);
+
+					if (numBytes> 0)
+						bufferedFileOutputStream.write(decryptedFile, 0, numBytes);
 
 					if (numBytes < 117) {
 						System.out.println("Closing connection...");
 
 						if (bufferedFileOutputStream != null) bufferedFileOutputStream.close();
 						if (bufferedFileOutputStream != null) fileOutputStream.close();
-						fromClient.close();
-						toClient.close();
-						connectionSocket.close();
+						
 					}
 				}
 
