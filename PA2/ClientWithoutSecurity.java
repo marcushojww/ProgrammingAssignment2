@@ -22,7 +22,7 @@ public class ClientWithoutSecurity {
     	if (args.length > 1) filename = args[1];
 
     	int port = 4321;
-    	if (args.length > 2) port = Integer.parseInt(args[2]);
+    	// if (args.length > 2) port = Integer.parseInt(args[2]);
 
 		int numBytes = 0;
 
@@ -105,35 +105,45 @@ public class ClientWithoutSecurity {
 
 			System.out.println("Sending file...");
 
-			// Send the filename
-			toServer.writeInt(0);
-			toServer.writeInt(filename.getBytes().length);
-			toServer.write(filename.getBytes());
-			//toServer.flush();
+			for (int i = 0; i < args.length; i++) {
 
-			// Open the file
-			//FileInputSteam obtains input bytes from a file
-			//it is used for reading byte-orientated data
-			fileInputStream = new FileInputStream(filename);
+				// Send the filename
+				toServer.writeInt(0);
+				toServer.writeInt(filename.getBytes().length);
+				toServer.write(filename.getBytes());
+				//toServer.flush();
 
-			//BufferedInputStream is used to read information from a stream
-			bufferedFileInputStream = new BufferedInputStream(fileInputStream);
+				// Open the file
+				//FileInputSteam obtains input bytes from a file
+				//it is used for reading byte-orientated data
+				fileInputStream = new FileInputStream(filename);
 
-	        byte [] fromFileBuffer = new byte[117];
+				//BufferedInputStream is used to read information from a stream
+				bufferedFileInputStream = new BufferedInputStream(fileInputStream);
 
-	        // Send the file
-	        for (boolean fileEnded = false; !fileEnded;) {
-				numBytes = bufferedFileInputStream.read(fromFileBuffer);
-				fileEnded = numBytes < 117;
+				byte [] fromFileBuffer = new byte[117];
 
-				toServer.writeInt(1);
-				toServer.writeInt(numBytes);
-				toServer.write(fromFileBuffer);
-				toServer.flush();
+				// Send the file
+				for (boolean fileEnded = false; !fileEnded;) {
+
+					//bufferedFileInputStream reads bytes from byte-input stream into byte array, fromFileBuffer
+					numBytes = bufferedFileInputStream.read(fromFileBuffer);
+					fileEnded = numBytes < 117;
+
+					toServer.writeInt(1);
+					toServer.writeInt(numBytes);
+					toServer.write(fromFileBuffer);
+					toServer.flush();
+				}
+				// close input streams when all files transferred
+				if (i == args.length - 1){
+
+					bufferedFileInputStream.close();
+					fileInputStream.close();
+
+				}
+
 			}
-
-	        bufferedFileInputStream.close();
-	        fileInputStream.close();
 
 			System.out.println("Closing connection...");
 
