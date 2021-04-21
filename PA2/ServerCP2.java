@@ -178,22 +178,27 @@ public class ServerCP2 {
 				
 				// If the packet is for transferring the filename
 				if (packetType == 0) {
+					try{
 
-					System.out.println("Receiving file...");
+						System.out.println("Receiving file...");
 
-					int numBytes = fromClient.readInt();
-					
-					int numBytesFilename = fromClient.readInt();
-					
-					byte [] filename = new byte[numBytesFilename];
-					// Must use read fully!
-					// See: https://stackoverflow.com/questions/25897627/datainputstream-read-vs-datainputstream-readfully
-					fromClient.readFully(filename, 0, numBytesFilename);
+						int numBytes = fromClient.readInt();
+						
+						int numBytesFilename = fromClient.readInt();
+						
+						byte [] filename = new byte[numBytesFilename];
+						// Must use read fully!
+						// See: https://stackoverflow.com/questions/25897627/datainputstream-read-vs-datainputstream-readfully
+						fromClient.readFully(filename, 0, numBytesFilename);
 
-					byte[] decryptedFilename = AES.decrypt(filename, aesKey);
+						byte[] decryptedFilename = AES.decrypt(filename, aesKey);
 
-					fileOutputStream = new FileOutputStream("Server/recv_"+new String(decryptedFilename, 0, numBytes));
-					bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
+						fileOutputStream = new FileOutputStream("Server/recv_"+new String(decryptedFilename, 0, numBytes));
+						bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
+					}
+					catch(InvalidKeyException e){
+						System.out.println("Invalid encryption due to different key");
+					}
 
 				// If the packet is for transferring a chunk of the file
 				} else if (packetType == 1) {
