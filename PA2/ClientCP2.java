@@ -155,7 +155,7 @@ public class ClientCP2 {
 					{
 						try {
 							long timeStarted = System.nanoTime();
-							
+
 							for (int i = 1; i < inputSplit.length; i++) {
 
 								String filename = inputSplit[i];
@@ -244,6 +244,8 @@ public class ClientCP2 {
 
 							
 							int packetType = 0;
+							long timeStarted = System.nanoTime();
+							
 							do {
 								packetType = fromServer.readInt();
 								
@@ -282,6 +284,9 @@ public class ClientCP2 {
 								}
 								
 							} while (packetType != 5);
+
+							long timeTaken = System.nanoTime() - timeStarted;
+							System.out.println("Program took: " + timeTaken/1000000.0 + "ms to run");
 							
 						}
 					}
