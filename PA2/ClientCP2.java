@@ -45,7 +45,7 @@ public class ClientCP2 {
 		FileOutputStream fileOutputStream = null;
 		BufferedOutputStream bufferedFileOutputStream = null;
 
-		long timeStarted = System.nanoTime();
+		
 
 		try {
 
@@ -154,6 +154,8 @@ public class ClientCP2 {
 					else
 					{
 						try {
+							long timeStarted = System.nanoTime();
+							
 							for (int i = 1; i < inputSplit.length; i++) {
 
 								String filename = inputSplit[i];

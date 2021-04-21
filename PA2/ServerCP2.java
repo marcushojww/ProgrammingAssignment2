@@ -221,6 +221,15 @@ public class ServerCP2 {
 					}
 				}
 
+				// exit
+				if(packetType == 8){
+					System.out.println("Closing Connection...");
+					fromClient.close();
+					toClient.close();
+					connectionSocket.close();
+					System.out.println("Exiting...");
+				}
+
 			}
 		
 	}
