@@ -281,7 +281,7 @@ public class ClientCP1 {
 				}
 
 				else {
-					System.out.println("Please key a valid input");
+					System.out.println("Invalid input! Please key in a valid input");
 				}
 				
 
