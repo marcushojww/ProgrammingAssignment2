@@ -20,14 +20,9 @@ public class ClientCP1 {
 
 	public static void main(String[] args) {
 
-		// String filename = "100.txt";
-    	// if (args.length > 0) filename = args[0];
-
     	String serverAddress = "localhost";
-    	// if (args.length > 1) filename = args[1];
 
     	int port = 4321;
-    	// if (args.length > 2) port = Integer.parseInt(args[2]);
 
 		int numBytes = 0;
 
@@ -117,9 +112,6 @@ public class ClientCP1 {
 				String [] inputSplit = input.split(" ");
 
 				if (inputSplit[0].equals("exit")) {
-
-					
-					timeStarted = System.nanoTime();
 
 					toServer.writeInt(8);
 					System.out.println("Closing connection...");
@@ -272,6 +264,8 @@ public class ClientCP1 {
 						}
 
 					}
+					long timeTaken = System.nanoTime() - timeStarted;
+					System.out.println("Program took: " + timeTaken/1000000.0 + "ms to run");
 				}
 
 				else {
@@ -281,78 +275,7 @@ public class ClientCP1 {
 
 			}
 
-			// System.out.println("Sending file...");
-
-			// for (int i = 0; i < args.length; i++) {
-
-			// 	//access filename from argument
-			// 	String filename = args[i];
-
-			// 	//encrypt filename
-			// 	byte[] encryptedFilename = RSA.encrypt(filename.getBytes(), serverPublicKey);
-			// 	int numBytesFilename = encryptedFilename.length;
-			// 	// Send the filename
-			// 	toServer.writeInt(0);
-			// 	//original bytes of filename
-			// 	toServer.writeInt(filename.getBytes().length);
-			// 	//send length of filename byte array so client can use length
-			// 	//to create a byte array of suitable length to store byte from filename
-			// 	//when readFully
-			// 	toServer.writeInt(numBytesFilename);
-			// 	//sending content in bytes
-			// 	toServer.write(encryptedFilename);
-			// 	//toServer.flush();
-
-			// 	// Open the file
-			// 	//FileInputSteam obtains input bytes from a file
-			// 	//it is used for reading byte-orientated data
-			// 	fileInputStream = new FileInputStream(filename);
-
-			// 	//BufferedInputStream is used to read information from a stream
-			// 	bufferedFileInputStream = new BufferedInputStream(fileInputStream);
-
-			// 	byte [] fromFileBuffer = new byte[117];
-
-			// 	// Send the file
-			// 	for (boolean fileEnded = false; !fileEnded;) {
-
-			// 		//bufferedFileInputStream reads bytes from byte-input stream into byte array, fromFileBuffer
-			// 		numBytes = bufferedFileInputStream.read(fromFileBuffer);
-			// 		fileEnded = numBytes < 117;
-
-			// 		toServer.writeInt(1);
-			// 		//send original bytes of file
-			// 		toServer.writeInt(numBytes);
-					
-			// 		byte[] encryptedFile = RSA.encrypt(fromFileBuffer, serverPublicKey);
-
-			// 		int numBytesFile = encryptedFile.length;
-
-			// 		toServer.writeInt(numBytesFile);
-			// 		toServer.write(encryptedFile);
-			// 		toServer.flush();
-			// 	}
-
-			// 	if (i == args.length - 1) {
-
-					
-
-			// 	}
-			
-
-			// }
-
-			// System.out.println("Closing connection...");
-
-			// bufferedFileInputStream.close();
-			// fileInputStream.close();
-			// clientSocket.close();
-			
-
 		} catch (Exception e) {e.printStackTrace();}
-
-		// long timeTaken = System.nanoTime() - timeStarted;
-		// System.out.println("Program took: " + timeTaken/1000000.0 + "ms to run");
 	}
 
 
