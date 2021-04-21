@@ -1,4 +1,5 @@
 import java.io.BufferedOutputStream;
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
@@ -9,6 +10,8 @@ import java.net.Socket;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class ServerCP1 {
 	
@@ -38,6 +41,9 @@ public class ServerCP1 {
 
 			FileOutputStream fileOutputStream = null;
 			BufferedOutputStream bufferedFileOutputStream = null;
+
+			FileInputStream fileInputStream = null;
+			BufferedInputStream bufferedFileInputStream = null;
 
 		
 			welcomeSocket = new ServerSocket(port);
@@ -71,13 +77,91 @@ public class ServerCP1 {
 					//send encrypted Server certificate to Client
 					toClient.writeUTF(encryptedServerCert);
 				}
+
+				//download
+				if (packetType == 3) {
+					long timeStarted = System.nanoTime();
+					try{
+						System.out.println("download request...");
+
+						int numBytes = fromClient.readInt();
+						int numBytesFilename = fromClient.readInt();
+						
+						byte [] filename = new byte[numBytesFilename];
+						// Must use read fully!
+						// See: https://stackoverflow.com/questions/25897627/datainputstream-read-vs-datainputstream-readfully
+						fromClient.readFully(filename, 0, numBytesFilename);
+
+						byte[] decryptedFilename = RSA.decrypt(filename, serverPrivateKey);
+
+						fileInputStream = new FileInputStream("Server/"+new String(decryptedFilename, 0, numBytes));
+						System.out.println("download "+new String(decryptedFilename, 0, numBytes) + " requested");
+						bufferedFileInputStream = new BufferedInputStream(fileInputStream);
+						toClient.writeInt(3);
+
+						byte [] fromFileBuffer = new byte[117];
+
+						for (boolean fileEnded = false; !fileEnded;) {
+
+		
+							//bufferedFileInputStream reads bytes from byte-input stream into byte array, fromFileBuffer
+							numBytes = bufferedFileInputStream.read(fromFileBuffer);
+							fileEnded = numBytes < 117;
+
+							toClient.writeInt(4);
+							//send original bytes of file
+							toClient.writeInt(numBytes);
+							
+							byte[] encryptedFile = RSA.encrypt(fromFileBuffer, serverPrivateKey);
+
+							int numBytesFile = encryptedFile.length;
+
+							toClient.writeInt(numBytesFile);
+							toClient.write(encryptedFile);
+							toClient.flush();
+							System.out.println("fileEnded status: " + fileEnded);
+						}
+
+						long timeTaken = System.nanoTime() - timeStarted;
+						System.out.println("Program took: " + timeTaken/1000000.0 + "ms to run");
+						toClient.writeInt(5);
+					}
+			
+					catch(IOException e) {
+						System.out.println("File does not exist. Please key in a valid file name");
+						toClient.writeInt(5);
+					}
+				}
+
+
+				
+				else if(packetType == 4){
+
+					int numBytes = fromClient.readInt();
+					int numBytesFile = fromClient.readInt();
+					byte [] block = new byte[numBytesFile];
+					fromClient.readFully(block, 0, numBytesFile);
+
+					byte[] decryptedFile = RSA.decrypt(block, serverPrivateKey);
+
+					if (numBytes> 0)
+						bufferedFileOutputStream.write(decryptedFile, 0, numBytes);
+
+					if (numBytes < 117) {
+
+						if (bufferedFileOutputStream != null) bufferedFileOutputStream.close();
+						if (bufferedFileOutputStream != null) fileOutputStream.close();
+						
+					}
+
+				}
 				//if error is present
 				if (packetType == 404) {
 					System.out.println("Error 404");
 					fromClient.close();
 					toClient.close();
 					connectionSocket.close();
-			} 
+				} 
 			
 				
 				// If the packet is for transferring the filename
@@ -95,7 +179,8 @@ public class ServerCP1 {
 
 					byte[] decryptedFilename = RSA.decrypt(filename, serverPrivateKey);
 
-					fileOutputStream = new FileOutputStream("recv_"+new String(decryptedFilename, 0, numBytes));
+					fileOutputStream = new FileOutputStream("Server/recv_"+new String(decryptedFilename, 0, numBytes));
+					System.out.println("recv_"+new String(decryptedFilename, 0, numBytes) + " received!");
 					bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
 
 				// If the packet is for transferring a chunk of the file
@@ -117,6 +202,15 @@ public class ServerCP1 {
 						if (bufferedFileOutputStream != null) fileOutputStream.close();
 						
 					}
+				}
+
+				// exit
+				if(packetType == 8){
+					System.out.println("Closing Connection...");
+					fromClient.close();
+					toClient.close();
+					connectionSocket.close();
+					System.out.println("Exiting...");
 				}
 
 			}

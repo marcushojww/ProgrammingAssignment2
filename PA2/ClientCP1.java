@@ -1,8 +1,10 @@
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +38,9 @@ public class ClientCP1 {
 
     	FileInputStream fileInputStream = null;
         BufferedInputStream bufferedFileInputStream = null;
+		
+		FileOutputStream fileOutputStream = null;
+		BufferedOutputStream bufferedFileOutputStream = null;
 
 		long timeStarted = System.nanoTime();
 
@@ -107,11 +112,14 @@ public class ClientCP1 {
 			while (true) {
 
 				Scanner in = new Scanner(System.in);
-				System.out.println("> ");
+				System.out.println(">");
 				String input = in.nextLine();
 				String [] inputSplit = input.split(" ");
 
 				if (inputSplit[0].equals("exit")) {
+
+					
+					timeStarted = System.nanoTime();
 
 					toServer.writeInt(8);
 					System.out.println("Closing connection...");
@@ -122,6 +130,8 @@ public class ClientCP1 {
 
 				}
 				else if (inputSplit[0].equals("upload")) {
+
+					timeStarted = System.nanoTime();
 
 					if (inputSplit.length == 1){
 						System.out.println("Please enter a filename");
@@ -136,7 +146,7 @@ public class ClientCP1 {
 								// Open the file
 								//FileInputSteam obtains input bytes from a file
 								//it is used for reading byte-orientated data
-								fileInputStream = new FileInputStream(filename);
+								fileInputStream = new FileInputStream("Client/" + filename);
 
 								//BufferedInputStream is used to read information from a stream
 								bufferedFileInputStream = new BufferedInputStream(fileInputStream);
@@ -188,8 +198,88 @@ public class ClientCP1 {
 						
 					}
 
-
 				}
+
+				else if (inputSplit[0].equals("download")) {
+
+					timeStarted = System.nanoTime();
+
+					if (inputSplit.length == 1){
+						System.out.println("Please enter a filename");
+					}
+					else{
+						for (int i = 1; i < inputSplit.length; i++) {
+
+							String filename = inputSplit[i];
+							
+							byte[] encryptedFilename = RSA.encrypt(filename.getBytes(), serverPublicKey);
+							int numBytesFilename = encryptedFilename.length;
+							
+							toServer.writeInt(3);
+							//original bytes of filename
+							toServer.writeInt(filename.getBytes().length);
+							//send length of filename byte array so client can use length
+							//to create a byte array of suitable length to store byte from filename
+							//when readFully
+							toServer.writeInt(numBytesFilename);
+							//sending content in bytes
+							toServer.write(encryptedFilename);
+
+							// Open the file
+							//FileInputSteam obtains input bytes from a file
+							//it is used for reading byte-orientated data
+
+							
+							int packetType = 0;
+							do {
+								packetType = fromServer.readInt();
+								System.out.println(packetType);
+								
+								if(packetType == 3){
+									fileOutputStream = new FileOutputStream("Client/downloaded_" + filename);
+
+									//BufferedInputStream is used to read information from a stream
+									bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
+								}
+
+								else if(packetType == 4){
+									System.out.println("downloading "+ filename + "'s content");
+
+									numBytes = fromServer.readInt();
+									System.out.println("numBytes: " + numBytes);
+
+									int numBytesFile = fromServer.readInt();
+									System.out.println("numBytesFile: " + numBytesFile);
+									
+									byte [] block = new byte[numBytesFile];
+									fromServer.readFully(block, 0, numBytesFile);
+									System.out.println("Block: " + block);
+
+									byte[] decryptedFile = RSA.decrypt(block, serverPublicKey);
+									System.out.println("File: " + decryptedFile);
+
+									if (numBytes> 0)
+									System.out.println("Writing...");
+									bufferedFileOutputStream.write(decryptedFile, 0, numBytes);
+
+									if (numBytes < 117) {
+										System.out.println("Finished");
+
+										if (bufferedFileOutputStream != null) bufferedFileOutputStream.close();
+										if (bufferedFileOutputStream != null) fileOutputStream.close();
+										
+									}
+								}
+								else if(packetType == 404){
+									System.out.println("File does not exist!");
+								}
+								
+							} while (packetType != 5);
+						}
+
+					}
+				}
+
 				else {
 					System.out.println("Please key a valid input");
 				}
