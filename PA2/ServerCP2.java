@@ -198,6 +198,12 @@ public class ServerCP2 {
 					}
 					catch(InvalidKeyException e){
 						System.out.println("Invalid encryption due to different key");
+						toClient.writeInt(8);
+						System.out.println("Closing Connection...");
+						fromClient.close();
+						toClient.close();
+						connectionSocket.close();
+						System.out.println("Exiting...");
 					}
 
 				// If the packet is for transferring a chunk of the file

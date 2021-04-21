@@ -125,11 +125,15 @@ public class ServerCP1 {
 						System.out.println("Program took: " + timeTaken/1000000.0 + "ms to run");
 						toClient.writeInt(5);
 					}
+
+					catch(IOException | InvalidKeyException ex){
+						System.out.println(ex);
+				   }
 			
-					catch(IOException e) {
-						System.out.println("File does not exist. Please key in a valid file name");
-						toClient.writeInt(404);
-					}
+					// catch(IOException e) {
+					// 	System.out.println("File does not exist. Please key in a valid file name");
+					// 	toClient.writeInt(404);
+					// }
 				}
 
 
@@ -165,7 +169,7 @@ public class ServerCP1 {
 				
 				// If the packet is for transferring the filename
 				if (packetType == 0) {
-					try{
+					// try{
 
 						System.out.println("Receiving file...");
 
@@ -182,10 +186,10 @@ public class ServerCP1 {
 						fileOutputStream = new FileOutputStream("Server/recv_"+new String(decryptedFilename, 0, numBytes));
 						System.out.println("recv_"+new String(decryptedFilename, 0, numBytes) + " received!");
 						bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
-					}
-					catch(InvalidKeyException e){
-						System.out.println("Invalid encryption due to different key");
-					}
+					// }
+					// catch(InvalidKeyException e){
+					// 	System.out.println("Invalid encryption due to different key");
+					// }
 
 				// If the packet is for transferring a chunk of the file
 				} else if (packetType == 1) {

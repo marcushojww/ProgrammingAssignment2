@@ -259,6 +259,14 @@ public class ClientCP1 {
 									System.out.println("File does not exist. Please key in a valid file name");
 									break;
 								}
+								else if(packetType == 8){
+									System.out.println("Wrong key sent, closing connection...");
+									if (bufferedFileInputStream != null) bufferedFileInputStream.close();
+									if(fileInputStream != null) fileInputStream.close();
+									clientSocket.close();
+									break;
+								}
+
 								
 							} while (packetType != 5);
 						}
