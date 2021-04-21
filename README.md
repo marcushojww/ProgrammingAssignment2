@@ -15,7 +15,16 @@
 
 <br />
 
-2. ### exit
+2. ### download (filename)
+
+   - command to download file(s) from server to client
+
+   - (filename) parameter accepts one or more file names as arguments
+   - example: download recv_tzuyu.jpeg
+
+<br />
+
+3. ### exit
 
    - command to exit the terminal
 
