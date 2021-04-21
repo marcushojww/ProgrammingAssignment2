@@ -1,8 +1,10 @@
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,6 +41,9 @@ public class ClientCP2 {
 
     	FileInputStream fileInputStream = null;
         BufferedInputStream bufferedFileInputStream = null;
+		
+		FileOutputStream fileOutputStream = null;
+		BufferedOutputStream bufferedFileOutputStream = null;
 
 		long timeStarted = System.nanoTime();
 
@@ -156,7 +161,7 @@ public class ClientCP2 {
 								// Open the file
 								//FileInputSteam obtains input bytes from a file
 								//it is used for reading byte-orientated data
-								fileInputStream = new FileInputStream(filename);
+								fileInputStream = new FileInputStream("Client/" + filename);
 
 								//BufferedInputStream is used to read information from a stream
 								bufferedFileInputStream = new BufferedInputStream(fileInputStream);
@@ -166,7 +171,9 @@ public class ClientCP2 {
 								//original bytes of filename
 								toServer.writeInt(filename.getBytes().length);
 								
-								toServer.write(filename.getBytes());
+								byte[] encryptedFilename = AES.encrypt(filename.getBytes(), aesKey);
+								toServer.writeInt(encryptedFilename.length);
+								toServer.write(encryptedFilename);
 								
 								//toServer.flush();
 	
@@ -204,6 +211,81 @@ public class ClientCP2 {
 
 
 				}
+
+				else if (inputSplit[0].equals("download")) {
+
+					if (inputSplit.length == 1){
+						System.out.println("Please enter a filename");
+					}
+					else
+					{
+						for (int i = 1; i < inputSplit.length; i++) {
+
+							String filename = inputSplit[i];
+							
+							byte[] encryptedFilename = AES.encrypt(filename.getBytes(), aesKey);
+							int numBytesFilename = encryptedFilename.length;
+							
+							toServer.writeInt(3);
+							//original bytes of filename
+							toServer.writeInt(filename.getBytes().length);
+							//send length of filename byte array so client can use length
+							//to create a byte array of suitable length to store byte from filename
+							//when readFully
+							toServer.writeInt(numBytesFilename);
+							//sending content in bytes
+							toServer.write(encryptedFilename);
+
+							// Open the file
+							//FileInputSteam obtains input bytes from a file
+							//it is used for reading byte-orientated data
+
+							
+							int packetType = 0;
+							do {
+								packetType = fromServer.readInt();
+								
+								if(packetType == 3){
+									fileOutputStream = new FileOutputStream("Client/downloaded_" + filename);
+
+									//BufferedInputStream is used to read information from a stream
+									bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
+								}
+
+								else if(packetType == 4){
+
+									numBytes = fromServer.readInt();
+
+									int numBytesFile = fromServer.readInt();
+									
+									byte [] block = new byte[numBytesFile];
+									fromServer.readFully(block, 0, numBytesFile);
+
+									byte[] decryptedFile = AES.decrypt(block, aesKey);
+
+									if (numBytes> 0)
+									bufferedFileOutputStream.write(decryptedFile, 0, numBytes);
+
+									if (numBytes < 117) {
+										System.out.println("Finished");
+
+										if (bufferedFileOutputStream != null) bufferedFileOutputStream.close();
+										if (bufferedFileOutputStream != null) fileOutputStream.close();
+										
+									}
+								}
+								else if(packetType == 404){
+									System.out.println("File does not exist! Please key in a valid file name");
+									break;
+								}
+								
+							} while (packetType != 5);
+							
+						}
+					}
+
+
+				}
 				else {
 					System.out.println("Please key a valid input");
 				}
@@ -211,78 +293,7 @@ public class ClientCP2 {
 
 			}
 
-			// System.out.println("Sending file...");
-
-			// for (int i = 0; i < args.length; i++) {
-
-			// 	//access filename from argument
-			// 	String filename = args[i];
-
-			// 	//encrypt filename
-			// 	byte[] encryptedFilename = RSA.encrypt(filename.getBytes(), serverPublicKey);
-			// 	int numBytesFilename = encryptedFilename.length;
-			// 	// Send the filename
-			// 	toServer.writeInt(0);
-			// 	//original bytes of filename
-			// 	toServer.writeInt(filename.getBytes().length);
-			// 	//send length of filename byte array so client can use length
-			// 	//to create a byte array of suitable length to store byte from filename
-			// 	//when readFully
-			// 	toServer.writeInt(numBytesFilename);
-			// 	//sending content in bytes
-			// 	toServer.write(encryptedFilename);
-			// 	//toServer.flush();
-
-			// 	// Open the file
-			// 	//FileInputSteam obtains input bytes from a file
-			// 	//it is used for reading byte-orientated data
-			// 	fileInputStream = new FileInputStream(filename);
-
-			// 	//BufferedInputStream is used to read information from a stream
-			// 	bufferedFileInputStream = new BufferedInputStream(fileInputStream);
-
-			// 	byte [] fromFileBuffer = new byte[117];
-
-			// 	// Send the file
-			// 	for (boolean fileEnded = false; !fileEnded;) {
-
-			// 		//bufferedFileInputStream reads bytes from byte-input stream into byte array, fromFileBuffer
-			// 		numBytes = bufferedFileInputStream.read(fromFileBuffer);
-			// 		fileEnded = numBytes < 117;
-
-			// 		toServer.writeInt(1);
-			// 		//send original bytes of file
-			// 		toServer.writeInt(numBytes);
-					
-			// 		byte[] encryptedFile = RSA.encrypt(fromFileBuffer, serverPublicKey);
-
-			// 		int numBytesFile = encryptedFile.length;
-
-			// 		toServer.writeInt(numBytesFile);
-			// 		toServer.write(encryptedFile);
-			// 		toServer.flush();
-			// 	}
-
-			// 	if (i == args.length - 1) {
-
-					
-
-			// 	}
-			
-
-			// }
-
-			// System.out.println("Closing connection...");
-
-			// bufferedFileInputStream.close();
-			// fileInputStream.close();
-			// clientSocket.close();
-			
-
 		} catch (Exception e) {e.printStackTrace();}
-
-		// long timeTaken = System.nanoTime() - timeStarted;
-		// System.out.println("Program took: " + timeTaken/1000000.0 + "ms to run");
 	}
 
 

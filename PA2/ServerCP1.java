@@ -119,7 +119,6 @@ public class ServerCP1 {
 							toClient.writeInt(numBytesFile);
 							toClient.write(encryptedFile);
 							toClient.flush();
-							System.out.println("fileEnded status: " + fileEnded);
 						}
 
 						long timeTaken = System.nanoTime() - timeStarted;
@@ -129,7 +128,7 @@ public class ServerCP1 {
 			
 					catch(IOException e) {
 						System.out.println("File does not exist. Please key in a valid file name");
-						toClient.writeInt(5);
+						toClient.writeInt(404);
 					}
 				}
 

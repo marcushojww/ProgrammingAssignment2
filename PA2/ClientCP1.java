@@ -233,7 +233,6 @@ public class ClientCP1 {
 							int packetType = 0;
 							do {
 								packetType = fromServer.readInt();
-								System.out.println(packetType);
 								
 								if(packetType == 3){
 									fileOutputStream = new FileOutputStream("Client/downloaded_" + filename);
@@ -243,23 +242,17 @@ public class ClientCP1 {
 								}
 
 								else if(packetType == 4){
-									System.out.println("downloading "+ filename + "'s content");
 
 									numBytes = fromServer.readInt();
-									System.out.println("numBytes: " + numBytes);
 
 									int numBytesFile = fromServer.readInt();
-									System.out.println("numBytesFile: " + numBytesFile);
 									
 									byte [] block = new byte[numBytesFile];
 									fromServer.readFully(block, 0, numBytesFile);
-									System.out.println("Block: " + block);
 
 									byte[] decryptedFile = RSA.decrypt(block, serverPublicKey);
-									System.out.println("File: " + decryptedFile);
 
 									if (numBytes> 0)
-									System.out.println("Writing...");
 									bufferedFileOutputStream.write(decryptedFile, 0, numBytes);
 
 									if (numBytes < 117) {
@@ -271,7 +264,8 @@ public class ClientCP1 {
 									}
 								}
 								else if(packetType == 404){
-									System.out.println("File does not exist!");
+									System.out.println("File does not exist. Please key in a valid file name");
+									break;
 								}
 								
 							} while (packetType != 5);

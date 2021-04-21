@@ -1,4 +1,5 @@
 import java.io.BufferedOutputStream;
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
@@ -8,6 +9,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -42,6 +45,9 @@ public class ServerCP2 {
 
 			FileOutputStream fileOutputStream = null;
 			BufferedOutputStream bufferedFileOutputStream = null;
+			
+			FileInputStream fileInputStream = null;
+			BufferedInputStream bufferedFileInputStream = null;
 
 		
 			welcomeSocket = new ServerSocket(port);
@@ -77,13 +83,89 @@ public class ServerCP2 {
 					//send encrypted Server certificate to Client
 					toClient.writeUTF(encryptedServerCert);
 				}
+
+				//download
+				if (packetType == 3) {
+					long timeStarted = System.nanoTime();
+					try{
+						System.out.println("download request...");
+
+						int numBytes = fromClient.readInt();
+						int numBytesFilename = fromClient.readInt();
+						
+						byte [] filename = new byte[numBytesFilename];
+						// Must use read fully!
+						// See: https://stackoverflow.com/questions/25897627/datainputstream-read-vs-datainputstream-readfully
+						fromClient.readFully(filename, 0, numBytesFilename);
+
+						byte[] decryptedFilename = AES.decrypt(filename, aesKey);
+
+						fileInputStream = new FileInputStream("Server/"+new String(decryptedFilename, 0, numBytes));
+						System.out.println("download "+new String(decryptedFilename, 0, numBytes) + " requested");
+						bufferedFileInputStream = new BufferedInputStream(fileInputStream);
+						toClient.writeInt(3);
+
+						byte [] fromFileBuffer = new byte[117];
+
+						for (boolean fileEnded = false; !fileEnded;) {
+
+
+							//bufferedFileInputStream reads bytes from byte-input stream into byte array, fromFileBuffer
+							numBytes = bufferedFileInputStream.read(fromFileBuffer);
+							fileEnded = numBytes < 117;
+
+							toClient.writeInt(4);
+							//send original bytes of file
+							toClient.writeInt(numBytes);
+							
+							byte[] encryptedFile = AES.encrypt(fromFileBuffer, aesKey);
+
+							int numBytesFile = encryptedFile.length;
+
+							toClient.writeInt(numBytesFile);
+							toClient.write(encryptedFile);
+							toClient.flush();
+						}
+
+						long timeTaken = System.nanoTime() - timeStarted;
+						System.out.println("Program took: " + timeTaken/1000000.0 + "ms to run");
+						toClient.writeInt(5);
+					}
+
+					catch(IOException e) {
+						System.out.println("File requested does not exist.");
+						toClient.writeInt(404);
+					}
+				}
+				
+				else if(packetType == 4){
+
+					int numBytes = fromClient.readInt();
+					int numBytesFile = fromClient.readInt();
+					byte [] block = new byte[numBytesFile];
+					fromClient.readFully(block, 0, numBytesFile);
+
+					byte[] decryptedFile = AES.decrypt(block, aesKey);
+
+					if (numBytes> 0)
+						bufferedFileOutputStream.write(decryptedFile, 0, numBytes);
+
+					if (numBytes < 117) {
+
+						if (bufferedFileOutputStream != null) bufferedFileOutputStream.close();
+						if (bufferedFileOutputStream != null) fileOutputStream.close();
+						
+					}
+
+				}
+
 				//if error is present
 				if (packetType == 404) {
 					System.out.println("Error 404");
 					fromClient.close();
 					toClient.close();
 					connectionSocket.close();
-			} 
+				} 
                 //retrieve aes key
                 if (packetType == 8888) {
                     System.out.println("Retrieving AES key from Client");
@@ -101,12 +183,16 @@ public class ServerCP2 {
 
 					int numBytes = fromClient.readInt();
 					
-					byte [] filename = new byte[numBytes];
+					int numBytesFilename = fromClient.readInt();
+					
+					byte [] filename = new byte[numBytesFilename];
 					// Must use read fully!
 					// See: https://stackoverflow.com/questions/25897627/datainputstream-read-vs-datainputstream-readfully
-					fromClient.readFully(filename, 0, numBytes);
+					fromClient.readFully(filename, 0, numBytesFilename);
 
-					fileOutputStream = new FileOutputStream("recv_"+new String(filename, 0, numBytes));
+					byte[] decryptedFilename = AES.decrypt(filename, aesKey);
+
+					fileOutputStream = new FileOutputStream("Server/recv_"+new String(decryptedFilename, 0, numBytes));
 					bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
 
 				// If the packet is for transferring a chunk of the file
